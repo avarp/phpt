@@ -1,5 +1,5 @@
 {
-    "name": "artem/phpt",
+    "name": "artem-vorobev/phpt",
     "description": "Complex strong types and functional features inspired by Haskell and Elm",
     "type": "library",
     "license": "MIT",

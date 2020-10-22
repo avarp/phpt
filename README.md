@@ -176,7 +176,7 @@ class NameSearchResult extends Variants
   static $variants = [
     'Exact' => [User::class],
     'Partial' => [User::class],
-    'Nothing'
+    'Nothing' => []
   ];
 }
 ```

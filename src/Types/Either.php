@@ -1,16 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 namespace Phpt\Types;
 
 
 abstract class Either extends Variants
 {
-  protected static function variants(...$args)
-  {
-    $leftType = $args[0];
-    $rightType = $args[1];
-    return [
-      'Left' => [$leftType],
-      'Right' => [$rightType]
-    ];
-  }
+  static $variants = [
+    'Left' => ['a'],
+    'Right' => ['b']
+  ];
 }

@@ -1,33 +1,24 @@
-<?php
+<?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\Type;
+use Phpt\Abstractions\AbstractType;
 
 
-abstract class Enum extends Type
+abstract class Enum extends AbstractType
 {
-  /**
-   * @return array Array of possible variants
-   * Each variant is just a string
-   */
-  abstract protected static function variants(...$args);
-
- 
-  
-
   /**
    * Create value using variant
    */
   public function __construct($variant)
   {
-    if (!in_array($variant, static::variants())) {
+    if (!in_array($variant, static::$variants)) {
       self::error(201, "Unknown enum variant \"$variant\" used in __construct method.");
     }
-    $this->value = array_search($variant, static::variants());
+    $this->value = array_search($variant, static::$variants);
   }
+  
 
 
-
-
+  
   /**
    * Magic method __call
    * Function names "is{$Constructor}" is available for pattern matching
@@ -36,10 +27,10 @@ abstract class Enum extends Type
   {
     if (substr($name, 0 , 2) == 'is') {
       $variant = substr($name, 2);
-      if (!in_array($variant, static::variants())) {
+      if (!in_array($variant, static::$variants)) {
         self::error(202, "Unknown enum variant \"$variant\" used by function \"$name\".");
       }
-      return $this->value === array_search($variant, static::variants());
+      return $this->value === array_search($variant, static::$variants);
     }
     self::error(203, "Unknown method \"$name\".");
   }
@@ -55,9 +46,9 @@ abstract class Enum extends Type
     if (!is_int($value)) {
       self::error(204, 'Type of value to wrap should be int. But '.self::getType($value).' is given.');
     }
-    if (!isset(static::variants()[$value])) {
-      self::error(205, 'There are '.count(static::variants())." variants was defined. But value given to wrap is $value.");
+    if (!isset(static::$variants[$value])) {
+      self::error(205, 'There are '.count(static::$variants)." variants was defined. But value given to wrap is $value.");
     }
-    return new static(static::variants()[$value]);
+    return new static(static::$variants[$value]);
   }
 }

@@ -1,15 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\Type as AbstractType;
+use Phpt\Abstractions\AbstractType;
+use Phpt\Abstractions\TypeSignature;
 
 
 abstract class Type extends AbstractType
 {
   /**
-   * Definition of type
-   * @see AbstractType::wrap
+   * Get ready to use type.
    */
-  abstract protected static function type(...$args);
+  protected static function type()
+  {
+    static $cache = [];
+    if (isset($cache[static::class])) return $cache[static::class];
+    return $cache[static::class] = new TypeSignature(static::$type, static::class);
+  }
   
 
 
@@ -19,7 +24,10 @@ abstract class Type extends AbstractType
    */
   public function __construct($value)
   {
-    self::typeCheck(static::type(), $value);
+    $result = self::typeCheck(self::type(), $value);
+    if (!$result->isOk) {
+      self::error(201, (string) $result);
+    }
     $this->value = $value;
   }
 
@@ -42,6 +50,6 @@ abstract class Type extends AbstractType
    */
   public static function wrap($value)
   {
-    return new static(parent::wrapRecursively(static::type(), $value));
+    return new static(self::wrapr(self::type(), $value));
   }
 }

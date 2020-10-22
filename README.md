@@ -12,7 +12,7 @@ Fortunately, we have type checking in PHP and it prevents us from making stupid 
 
 Functional languages have bunch of good types like Maybe, Either and so on. Inspired by Haskell and Elm this package provides a platform for creating strong typed and immutable data structures
 
-PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class name as a type. Phpt library provides set of abstract classes, which can be used as basis for your own types.
+PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class name as a type. Phpt library provides set of abstract classes, which can be used as a basis for your own types.
 
 ### Type
 
@@ -22,12 +22,7 @@ Class `Phpt\Types\Type` can be used for cteating simple types. Lets create type 
 use Phpt\Types\Type;
 class Point3D extends Type
 {
-  /**
-   * This function should return type signature (see what is it below)
-   */
-  protected static function type(...$_) {
-    return ['float', 'float', 'float'];
-  }
+  static $type = ['float', 'float', 'float'];
 }
 ```
 
@@ -68,9 +63,7 @@ Class `Phpt\Types\Enum` can be used for cteating enumerations. Lets create type 
 use Phpt\Types\Enum;
 class TrafficLight extends Enum
 {
-  protected static function variants(...$_) {
-    return ['Red', 'Yellow', 'Green'];
-  }
+  static $variants = ['Red', 'Yellow', 'Green'];
 }
 ```
 
@@ -116,11 +109,23 @@ For that case functional approach offers type `Maybe` . Of course it is abstract
 use Phpt\Types\Maybe;
 class MaybeUser extends Maybe
 {
-  protected static function variants(...$_) {
-    return parent::variants(User::class);
-  }
+  static $a = User::class;
 }
 ```
+
+Stop! What's the heck is this `static $a`? It is just _type variable_. Lets check out how class Maybe is defined in the library:
+
+```php
+abstract class Maybe extends Variants
+{
+  static $variants = [
+    'Just' => ['a'],   // <----- a is used here!, but a is not a type!
+    'Nothing' => []
+  ];
+}
+```
+
+By default Phpt library provides 8 possible _type variables_ from `a` to `h` and that variables should be defined in child class as static property with the same name.
 
 And now we can define our `find` method:
 
@@ -168,13 +173,11 @@ Here we need more than `Maybe`. Lets create type `NameSearchResult`:
 use Phpt\Types\Variants;
 class NameSearchResult extends Variants
 {
-  protected static function variants(...$_) {
-    return [
-      'Exact' => [User::class],
-      'Partial' => [User::class],
-      'Nothing'
-    ];
-  }
+  static $variants = [
+    'Exact' => [User::class],
+    'Partial' => [User::class],
+    'Nothing'
+  ];
 }
 ```
 

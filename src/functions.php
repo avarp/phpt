@@ -94,7 +94,7 @@ function identity($x) {return $x;}
 
 
 /**
- * Wrap parameters to an array. This is opposite operation to decomposition ...$x
+ * Wrap parameters to an array. This is the opposite operation to decomposition ...$x
  */
 function compose(...$params) {return $params;}
 

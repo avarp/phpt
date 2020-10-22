@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Phpt\Helpers;
+namespace Phpt\Abstractions;
 use \Phpt\Abstractions\Lambda;
 
 

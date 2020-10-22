@@ -1,16 +1,28 @@
-<?php
+<?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\Type;
+use Phpt\Abstractions\AbstractType;
+use Phpt\Abstractions\TypeSignature;
 
-abstract class Variants extends Type
+
+abstract class Variants extends AbstractType
 {
   /**
-   * @var array Associative map: TypeConstructor => Array of types
-   * Type constructor is just a string constructor is able to take N parameters,
-   * and they are represented as array of types.
-   * @see AbstractType::wrap
+   * Get ready to use variants.
    */
-  abstract protected static function variants(...$args);
+  protected static function variants()
+  {
+    static $cache = [];
+    if (isset($cache[static::class])) return $cache[static::class];
+    $result = [];
+    foreach (static::$variants as $constructor => $payload)
+    {
+      $result[$constructor] = [];
+      foreach ($payload as $index => $signature) {
+        $result[$constructor][$index] = new TypeSignature($signature, static::class);
+      }
+    }
+    return $cache[static::class] = $result;
+  }
 
 
 
@@ -20,7 +32,7 @@ abstract class Variants extends Type
    */
   public function __construct($constructor, ...$values)
   {
-    $variants = static::variants();
+    $variants = self::variants();
     if (!isset($variants[$constructor])) {
       self::error(301, "Unknown constructor \"$constructor\" called by __construct method.");
     }
@@ -30,7 +42,10 @@ abstract class Variants extends Type
       self::error(302, "Constructor \"$constructor\" requires $c1 parameter(s). $c2 was given.");
     }
     foreach ($values as $i => $value) {
-      self::typeCheck($variants[$constructor][$i], $value, "$constructor/$i");
+      $result = self::typeCheck($variants[$constructor][$i], $value, [$constructor, $i]);
+      if (!$result->isOk) {
+        self::error(307, (string) $result);
+      }
     }
     $this->value = [self::constructorToIndex($constructor), $values];
   }
@@ -40,7 +55,7 @@ abstract class Variants extends Type
 
   protected static function constructorToIndex($constructor)
   {
-    return array_search($constructor, array_keys(static::variants()));
+    return array_search($constructor, array_keys(static::$variants));
   }
 
 
@@ -48,7 +63,7 @@ abstract class Variants extends Type
 
   protected static function indexToConstructor($index)
   {
-    return array_keys(static::variants())[$index];
+    return array_keys(static::$variants)[$index];
   }
 
 
@@ -63,14 +78,14 @@ abstract class Variants extends Type
   {
     if (substr($name, 0 , 2) == 'is') {
       $constructor = substr($name, 2);
-      if (!isset(static::variants()[$constructor])) {
+      if (!isset(static::$variants[$constructor])) {
         self::error(303, "Unknown constructor \"$constructor\" used by function \"$name\".");
       }
       return self::constructorToIndex($constructor) == $this->value[0];
     }
     if (substr($name, 0 , 3) == 'get') {
       $constructor = substr($name, 3);
-      if (!isset(static::variants()[$constructor])) {
+      if (!isset(static::$variants[$constructor])) {
         self::error(303, "Unknown constructor \"$constructor\" used by function \"$name\".");
       }
       if (self::constructorToIndex($constructor) != $this->value[0]) {
@@ -94,7 +109,7 @@ abstract class Variants extends Type
   {
     $constructor = self::indexToConstructor($value[0]);
     $types = static::variants()[$constructor];
-    $values = map2(self::method('wrapRecursively'), $types, $value[1]);
+    $values = map2(self::method('wrapr'), $types, $value[1]);
     return new static($constructor, ...$values);
   }
 }

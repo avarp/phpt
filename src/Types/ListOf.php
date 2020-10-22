@@ -1,11 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 namespace Phpt\Types;
+
 
 abstract class ListOf extends Type
 {
-  protected static function type(...$args)
-  {
-    $innerType = $args[0];
-    return [$innerType];
-  }
+  static $type = ['a'];
 }

@@ -14,6 +14,20 @@ Functional languages have bunch of good types like Maybe, Either and so on. Insp
 
 PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class name as a type. Phpt library provides set of abstract classes, which can be used as a basis for your own types.
 
+### Istallation
+
+Installation with composer: `composer require artem-vorobev/phpt`
+
+
+
+## Usage
+
+You need to require autoload file. Then all Phpt classes are ready!
+
+```php
+require('vendor/autoload.php');
+``` 
+
 ### Type
 
 Class `Phpt\Types\Type` can be used for cteating simple types. Lets create type describing point in 3D space:

@@ -20,9 +20,6 @@ Installation with composer: `composer require artem-vorobev/phpt`
 
 
 
-
-
-
 ## Usage
 
 You need to require autoload file. Then all Phpt classes are ready!

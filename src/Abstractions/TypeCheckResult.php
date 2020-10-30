@@ -13,6 +13,6 @@ class TypeCheckResult
   public function __toString()
   {
     if ($this->isOk) return 'Ok.';
-    return 'Value '.implode('.', $this->path).' is to be '.$this->expected.', but '.$this->given.' is given.';
+    return 'Value'.(empty($this->path) ? '' : ' '.implode('.', $this->path)).' is to be '.$this->expected.', but '.$this->given.' is given.';
   }
 }

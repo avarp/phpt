@@ -107,6 +107,12 @@ abstract class Variants extends AbstractType
    */
   public static function wrap($value)
   {
+    if (!isRegularArray($value)) self::error(308, 'Value given to unwrap is not a regular array.');
+    if (count($value) != 2) self::error(309, 'Value given to unwrap should have length of 2.');
+    if (!is_int($value[0])) self::error(310, 'Value[0] given to unwrap should be integer.');
+    if ($value[0] < 0 || $value[0] >= count(static::$variants)) self::error(311, 'Value[0] is out of bounds.');
+    if (!is_array($value[1])) self::error(310, 'Value[1] given to unwrap should be an array.');
+
     $constructor = self::indexToConstructor($value[0]);
     $types = static::variants()[$constructor];
     $values = map2(self::method('wrapr'), $types, $value[1]);

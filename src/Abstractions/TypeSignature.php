@@ -87,7 +87,7 @@ class TypeSignature
   protected static function error(int $code, string $msg): void
   {
     $prefix = 'Type signature error. ';
-    throw new \Exception($prefix.$msg, $code);
+    throw new \Exception($prefix.$msg.getOuterFileAndLine(), $code);
   }
 
 

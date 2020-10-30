@@ -30,7 +30,7 @@ function map($fn, $arr) {
 function map2($fn, $arr1, $arr2) {
   $result = [];
   if (array_keys($arr1) !== array_keys($arr2)) {
-    throw new \InvalidArgumentException('map2 requires equal structure of both parameters');
+    throw new \InvalidArgumentException('map2 requires equal structure of both parameters.'.getOuterFileAndLine());
   }
   foreach ($arr1 as $index => $_) $result[$index] = $fn($arr1[$index], $arr2[$index], $index, $arr1, $arr2);
   return $result;
@@ -118,4 +118,20 @@ function arity($fn): int
   }
   // Functions
   return (new ReflectionFunction($fn))->getNumberOfRequiredParameters();
+}
+
+
+
+
+/**
+ * Get outer file from backtrace. Used for error reporting.
+ */
+function getOuterFileAndLine(): string
+{
+  $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+  foreach ($trace as $t) {
+    $file = $t['file'];
+    if (strpos($file, __DIR__) === false) return ' At '.$t['file'].':'.$t['line'];
+  }
+  return '';
 }

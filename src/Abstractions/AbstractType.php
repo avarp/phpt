@@ -148,7 +148,7 @@ abstract class AbstractType
     if (is_array($value)) {
       return map(self::method('unwrapr'), $value);
     }
-    self::error(100, 'Attempt to unwrap the value failed.');
+    self::error(101, 'Attempt to unwrap the value failed.');
   }
 
 
@@ -171,7 +171,9 @@ abstract class AbstractType
    */
   public static function decode(string $json)
   {
-    return static::wrap(json_decode($json, true));
+    $value = json_decode($json, true);
+    if (is_null($value)) self::error(102, 'JSON given is malformed.');
+    return static::wrap($value);
   }
 
 
@@ -225,6 +227,6 @@ abstract class AbstractType
   protected static function error(int $code, string $msg): void
   {
     $prefix = 'Type "'.static::class.'" error. ';
-    throw new \Exception($prefix.$msg, $code);
+    throw new \Exception($prefix.$msg.getOuterFileAndLine(), $code);
   }
 }

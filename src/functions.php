@@ -40,28 +40,6 @@ function map2($fn, $arr1, $arr2) {
 
 
 /**
- * Check if every value is true
- */
-function every($arr) {
-  foreach ($arr as $elem) if ($elem == false) return false;
-  return true;
-}
-
-
-
-
-/**
- * Check if at least one of values is true
- */
-function any($arr) {
-  foreach ($arr as $elem) if ($elem == true) return true;
-  return false;
-}
-
-
-
-
-/**
  * Check if array is regular, i.e. keys are 0 ... n
  */
 function isRegularArray($arr)
@@ -69,34 +47,6 @@ function isRegularArray($arr)
   if (!is_array($arr)) return false;
   return $arr === array_values($arr);
 }
-
-
-
-
-/**
- * Return array without some keys
- */
-function arrayWithout($arr, ...$keys)
-{
-  foreach ($keys as $key) if (isset($arr[$key])) unset($arr[$key]);
-  return $arr;
-}
-
-
-
-
-/**
- * Identity function
- */
-function identity($x) {return $x;}
-
-
-
-
-/**
- * Wrap parameters to an array. This is the opposite operation to decomposition ...$x
- */
-function compose(...$params) {return $params;}
 
 
 

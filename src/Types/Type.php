@@ -1,13 +1,22 @@
 <?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\AbstractType;
+use Phpt\Abstractions\TypedValue;
 use Phpt\Abstractions\TypeSignature;
+use Phpt\Abstractions\Json;
 
 
-abstract class Type extends AbstractType
+abstract class Type extends TypedValue
 {
+  use Json;
+  
   /**
-   * Get ready to use type.
+   * Type scheme. Depends on implementation.
+   */
+  static $type;
+  
+
+  /**
+   * Get cached instance of TypeSignature.
    */
   protected static function type()
   {
@@ -15,41 +24,22 @@ abstract class Type extends AbstractType
     if (isset($cache[static::class])) return $cache[static::class];
     return $cache[static::class] = new TypeSignature(static::$type, static::class);
   }
-  
-
 
 
   /**
-   * Create value using constructor and its parameters
+   * Create value
    */
   public function __construct($value)
   {
-    $result = self::typeCheck(self::type(), $value);
-    if (!$result->isOk) {
-      self::error(201, (string) $result);
-    }
-    $this->value = $value;
+    parent::__construct($value, self::type());
   }
 
-
-
-
-  /**
-   * Return encountered value
-   */
-  public function getValue()
-  {
-    return $this->unwrap();
-  }
-
-
-
-
+  
   /**
    * Wrap value into instance
    */
   public static function wrap($value)
   {
-    return new static(self::wrapr(self::type(), $value));
+    return new static(self::wrapr($value, self::type()));
   }
 }

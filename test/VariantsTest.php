@@ -27,6 +27,11 @@ class VariantsTest extends TestCase
     $v = new ExampleVariants('Multiple', 42, true, 'foo');
     $this->assertTrue($v->isMultiple());
     $this->assertSame([42, true, 'foo'], $v->getMultiple());
+    $this->assertSame([2, [42, true, 'foo']], $v->unwrap());
+
+    $v = ExampleVariants::wrap([2, [54, false, 'ok']]);
+    $this->assertTrue($v->isMultiple());
+    $this->assertSame([54, false, 'ok'], $v->getMultiple());
   }
 
 
@@ -52,7 +57,7 @@ class VariantsTest extends TestCase
 
   public function testConstructWithWrongTypes()
   {
-    $this->expectExceptionCode(307);
+    $this->expectExceptionCode(101);
     $e = new ExampleVariants('Multiple', 45.5, true, 'bar');
   }
 
@@ -63,7 +68,7 @@ class VariantsTest extends TestCase
   {
     $this->expectExceptionCode(303);
     $e = new ExampleVariants('Multiple', 45, true, 'bar');
-    $e->isMultilpe();
+    $e->isBlaBla();
   }
 
 
@@ -73,7 +78,7 @@ class VariantsTest extends TestCase
   {
     $this->expectExceptionCode(303);
     $e = new ExampleVariants('Multiple', 45, true, 'bar');
-    $e->getMultilpe();
+    $e->getBlaBla();
   }
 
 

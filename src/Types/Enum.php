@@ -1,10 +1,22 @@
 <?php declare(strict_types=1);
 namespace Phpt\Types;
 use Phpt\Abstractions\AbstractType;
+use Phpt\Abstractions\Error;
+use Phpt\Abstractions\Json;
+use Phpt\Abstractions\Equal;
 
 
-abstract class Enum extends AbstractType
+abstract class Enum
 {
+  use Error;
+  use Json;
+  use Equal;
+
+  /**
+   * Internal representation of value
+   */
+  protected int $value;
+  
   /**
    * Create value using variant
    */
@@ -44,11 +56,21 @@ abstract class Enum extends AbstractType
   public static function wrap($value)
   {
     if (!is_int($value)) {
-      self::error(204, 'Type of value to wrap should be int. But '.self::getType($value).' is given.');
+      self::error(204, 'Type of value to wrap should be int.');
     }
     if (!isset(static::$variants[$value])) {
       self::error(205, 'There are '.count(static::$variants)." variants was defined. But value given to wrap is $value.");
     }
     return new static(static::$variants[$value]);
+  }
+
+
+
+  /**
+   * Unwrap
+   */
+  public function unwrap()
+  {
+    return $this->value;
   }
 }

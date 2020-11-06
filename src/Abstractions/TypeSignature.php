@@ -4,10 +4,12 @@ namespace Phpt\Abstractions;
 
 class TypeSignature
 {
+  use Error;
+  
   /**
    * Internal representation of the type signature
    */
-  protected array $value;
+  protected array $type;
 
 
 
@@ -39,10 +41,10 @@ class TypeSignature
     }
     if (is_string($signature)) {
       if (in_array($signature, ['int', 'float', 'bool', 'string'])) {
-        $this->value = [strtoupper($signature[0]).substr($signature, 1), null];
+        $this->type = [strtoupper($signature[0]).substr($signature, 1), null];
       }
       elseif (class_exists($signature)) {
-        $this->value = ['Class', $signature];
+        $this->type = ['Class', $signature];
       }
       else {
         self::error(403, "Unknown scalar type \"$signature\".");
@@ -54,40 +56,26 @@ class TypeSignature
       }
       if (isRegularArray($signature)) {
         if (count($signature) == 1) {
-          $this->value = ['List', new self($signature[0], $context)];
+          $this->type = ['List', new self($signature[0], $context)];
         }
         else {
           $innerTypes = [];
           foreach ($signature as $s) {
             $innerTypes[] = new self($s, $context);
           }
-          $this->value = ['Tuple', $innerTypes];
+          $this->type = ['Tuple', $innerTypes];
         }
       } else {
         $innerTypes = [];
         foreach ($signature as $key => $s) {
           $innerTypes[$key] = new self($s, $context);
         }
-        $this->value = ['Record', $innerTypes];
+        $this->type = ['Record', $innerTypes];
       }
     }
     else {
       self::error(405, 'Incorrect type signature');
     }
-  }
-
-  
-
-
-  /**
-   * Throw an error
-   * @param string $msg Message to be thrown
-   * @throws \Exception
-   */
-  protected static function error(int $code, string $msg): void
-  {
-    $prefix = 'Type signature error. ';
-    throw new \Exception($prefix.$msg.getOuterFileAndLine(), $code);
   }
 
 
@@ -99,19 +87,19 @@ class TypeSignature
     if (substr($name, 0 , 2) == 'is') {
       $variant = substr($name, 2);
       if (in_array($variant, $possibleVariants)) {
-        return $variant == $this->value[0];
+        return $variant == $this->type[0];
       }
     }
     if (substr($name, 0 , 3) == 'get') {
       $variant = substr($name, 3);
       if (in_array($variant, $possibleVariants)) {
-        if ($variant == $this->value[0]) {
-          if (!is_null($this->value[1])) {
-            return $this->value[1];
+        if ($variant == $this->type[0]) {
+          if (!is_null($this->type[1])) {
+            return $this->type[1];
           }
         }
         else {
-          self::error(401, 'Type signature is kind of "'.$this->value[0]."\", but retrieved with method \"$name\".");
+          self::error(401, 'Type signature is kind of "'.$this->type[0]."\", but retrieved with method \"$name\".");
         }
       }
     }
@@ -123,7 +111,7 @@ class TypeSignature
 
   public function isTrivial(): bool
   {
-    return in_array($this->value[0], ['Int', 'Float', 'String', 'Bool']);
+    return in_array($this->type[0], ['Int', 'Float', 'String', 'Bool']);
   }
 
 
@@ -131,7 +119,7 @@ class TypeSignature
 
   public function isScalar(): bool
   {
-    return $this->isTrivial() || $this->value[0] == 'Class';
+    return $this->isTrivial() || $this->type[0] == 'Class';
   }
 
 

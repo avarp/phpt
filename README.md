@@ -12,7 +12,7 @@ Fortunately, we have type checking in PHP and it prevents us from making stupid 
 
 Functional languages have bunch of good types like Maybe, Either and so on. Inspired by Haskell and Elm this package provides a platform for creating strong typed and immutable data structures
 
-PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class name as a type. Phpt library provides set of abstract classes, which can be used as a basis for your own types.
+PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class names as a type. Phpt library provides set of abstract classes, which can be used as a basis for your own types.
 
 ### Installation
 
@@ -30,141 +30,60 @@ require('vendor/autoload.php');
 
 
 
-## Usage
+## Basic usage
 
 
 
-### 1. Typed values
+### 1. First example. Lists.
 
+List is a typed array which consists of *N* elements of the same type.
 
-
-#### 1.1 Value creation
-
-Class `Phpt\Types\Type` can be used for creating both simple values and complex typed arrays. Lets create type describing point in 3D space:
+Class `Phpt\Types\ListOf` can be used for creating lists. Let's create list of integers:
 
 ```php
-use Phpt\Types\Type;
-class Point3D extends Type
+use Phpt\Types\ListOf;
+class ListOfInt extends ListOf
 {
-  static $type = ['float', 'float', 'float'];
+  static $type = ['int'];
 }
+
+$list = new ListOfInt([1, 2, 3, 4, 5]);
 ```
 
-Variable $type is only one required value to be defined. It can be:
-
-- Scalar value
-  - Integer, defined by string `'int'`
-  - Float, defined by string `'float'`
-  - String, defined by string `'string'`
-  - Boolean, defined by string `'bool'`
-  - Instance of class, defined by class name. Recursive definition is allowed but in this case will cause infinite recursion.
-- Complex value
-  - List, defined by array with one element `[*]`, where * is either scalar of complex type. All elements in list must have same type.
-  - Tuple, defined by array with _n_ elements `[*, ...]`, where _n_ > 1 and * means the same as for lists. Elements of tuple may have different types.
-  - Record, defined by associative array `['key1' => *, 'key2' => *, ...]`, Record should have at least one string key. Elements of record may have different types.
-- Type variable. Letters from `'a'` to `'h'` are resefved for type variables. So, you can create abstract type with type variables instead of final types and in child classes define those types. See example below:
+Class `ListOf` implements built-in PHP interfaces such as `ArrayAccess`, `Countable` and `Iterator`, so you can treat the list object as normal array. Example below shows definition of the function which calculates average value of list of integers:
 
 ```php
-abstract class ListOf extends Type // This class is actually defined in the library as Phpt\Types\ListOf
+function average(ListOfInt $list): int
 {
-  static $type = ['a'];
-}
-
-class ListOfString extends ListOf
-{
-  static $a = 'string';
-}
-
-class ListOfBools extends ListOf
-{
-  static $a = 'bool';
+  $sum = 0;
+  foreach ($list as $int) $sum += $int; // You can use list in foreach loops
+  return $sum/count($list); // count is also supported
 }
 ```
 
-
-
-#### 1.2 Using class name as name of type
-
-The library doesn't restrict which classes you can use as the type, but it is strongly recommended to avoid using any classes which are not inherited from classes: `Phpt\Types\Type`, `Phpt\Abstractions\TypedValue`, `Phpt\Types\Variants` and `Phpt\Types\Enum`. Possible caveats here are calling methods which are not defined in your class and possible lost of immutability (see also §4)
-
-
-
-#### 1.3 Access to values
-
-Class `Phpt\Types\Type` implements interfaces `ArrayAccess`, `Iterator` and `Countable`, so you can access inner values using syntax described below:
+You can also use `[$i]` notation to access elements of list:
 
 ```php
-$point = new Point3D([0.1, 0.2, 0.3]);
-echo "Point is: $point[0], $point[1], $point[2]";
+$list = new ListOfInt([1, 2, 3, 4, 5]);
 
-foreach ($point as $coord) {
-  // do something
-}
-
-count($point) == 3 // true
+$list[0] == 1 // true
+$list[4] == 5 // true
+$list[100500] // Exception! This key is not defined!
 ```
 
-For records there is also alternative object-oriented syntax available:
+#### Immutability and mutations
+
+Comparing to PHP arrays lists are immutable. So, you can't modify elements of the list. But it is not a problem. Let's see how you can add elements to list:
 
 ```php
-class User extends Type
-{
-  static $type = [
-    'id' => 'int',
-    'name' => 'string'
-  ];
-}
-
-$user = new User(['id' => 1, 'name' => 'John']);
-echo "Hello, {$user->name}";
+$list = new ListOfInt([]); // empty list
+$list = $list->pushed(1);  // [1]
+$list = $list->pushed(2, 3, 4, 5); // [1,2,3,4,5] 
 ```
 
-For scalar values you can retrieve encapsulated value like this:
+So, instead of mutation, every time new list will be created. If you need to have old copy, save result into new variable. If not - just overwrite the old one!
 
-```php
-class Int extends Type
-{
-  static $type = 'int';
-}
-
-$answer = new Int(42);
-echo "Answer is, {$answer->value}";
-```
-
-
-
-#### 1.4 Immutability and mutation
-
-Typed values are immutable and you'll get an error if you'll try to do that:
-
-```php
-$point = new Point3D([0.1, 0.2, 0.3]);
-$point[0] = 3.141; // this line will cause an error
-```
-
-Instead of that you need to create a new instance _with_ updated value.
-
-```php
-$newPoint = $point->with([0 => 3.141]);
-```
-
-Method `with(array $patch)` accepts an array with values for those keys you want to change. Method `with` works only for complex types. For scalar types use method `withValue($value)` which return a new instance with given value.
-
-Methods `with` also works correctly in case of deeply nested structures:
-
-```php
-// Even though the method was called on a nested property it will return whole new patched tree
-// But this new tree will share all elements from previous tree except those which were changed
-$value1 = $value0->key1->key2->...->with(...);
-
-get_class($value0) == get_class($value1) // true
-```
-
-
-
-#### 1.5 Operations with lists
-
-There are 5 methods defined for working with lists:
+There is a bunch of function you can use with lists:
 
 - `pushed(...$elements)` Returns new list with _n_ values pushed to the end
 - `popped(int $n=1)` Returns new list with _n_ values dropped from the end
@@ -172,204 +91,99 @@ There are 5 methods defined for working with lists:
 - `unshifted(...$elements)` Returns new list with _n_ values dropped from the start
 - `spliced(int $offset, int $length, array $replacement=[])` Returns new list "spliced" by function `array_splice`
 
-Like method `with` those functions work correctly also for deeply nested structures
-
-
-
-#### 1.6 Checking equality
-
-There is method `equal($value)` which takes value you wan compare with. Two typed values are equal if:
-
-1. They both are instances of the same class, i.e both have the same type
-2. They have equal content
-
-
-
-
-
-### 2. Mixed types
-
-If you already know any functional language like Haskell or Scala, you already know the concepts. Anyway mixed types is powerful instrument when you're working with values which sometimes have one type and sometimes another.
-
-
-
-#### 2.1 Maybe
-
-Class `Phpt\Types\Maybe` is useful when some function _may_ return a value or it can just fail. Lets assume that we have users of our app represented by model `User`. Assume that class `User` has static method `find` which searches a user by his email and returns an instance of `User` if there is such user.
+Method `with` allows you to re-assign values according their keys:
 
 ```php
-class User
-{
-  public static function find(string $email): // Which type we should use here?
-  {
-    // do searching
-  } 
-}
+$list1 = new ListOfInt([1, 2, 3, 4, 5]);
+$list2 = $list1->with([0 => 5, 1 => 4]);
+
+// List 1 is still [1,2,3,4,5]
+// List 2 is [5,4,3,4,5]
 ```
 
-As you can see, it is not obvious to detect the type of that function. We can't say that it returns `User`. Sometimes, yes, it returns. But in case of failure PHP functions usually returns something weird like `null`, `false` of even `-1`.
-
-For that case you can use type `Maybe` . Of course it is abstract type and in our case it will be something like `MaybeUser`. We can define it in that way:
+If you need some specific function like `array_unique` which is not implemented, you can use method `unwrap` which is opposite to constructor: it returns real PHP array with the same values:
 
 ```php
-use Phpt\Types\Maybe;
-class MaybeUser extends Maybe
-{
-  static $a = User::class;
-}
+$list = new ListOfInt([3,5,1,2,4]);
+$php_array = $list->unwrap();				// $php_array is [3,5,1,2,4]
+asort($php_array);									// $php_array is [2 => 1, 3 => 2, 0 => 3, 4 => 4, 1 => 5,]
 ```
 
-As you can see, we defined it using type variable. And now we can define our `find` method:
+But there is one serious caveat: you can't now put sorted list into ListOfInt's constructor. Reason is simple: array is not _regular_. It means that key of element does not show anymore real position in array. As you can see, number 1 is first, but it has key 2. What we need to do here is to get rid of these keys using PHP function `array_values` :
 
 ```php
-class User
-{
-  public static function find(string $email): MaybeUser
-  {
-    // do search and put it into $user if found
-    if (isset($user)) {
-      return new MaybeUser('Just', $user);
-    } else {
-      return new MaybeUser('Nothing');
-    }
-  } 
-}
+$sortedList = new ListOfInt(array_values($php_array));
 ```
 
-As you can see our result has defined type. And there are only two variants `'Just'` and `'Nothing'`. In case `'Just'` you can pass an additional payload. Lets see how to use our `find` method:
+
+
+### 2. Other typed values
+
+#### Tuples
+
+If you know Python you already know what tuples is. Tuple is set of elements with fixed length and types of elements. For example, we can represent coordinate in 3D space with tuple:
 
 ```php
-$result = User::find('test@example.com');
-
-if ($result->isNothing()) {
-  // No user found
-} else {
-  $user = $result->getJust();
-  // Do something with found result
+use Phpt\Types\Tuple;
+class Point3D extends Tuple
+{
+  static $type = ['float', 'float', 'float'];
 }
+
+$origin = new Point3D([0.0, 0.0, 0.0]);
 ```
 
-No need to guess what function returns in case of failure: null, false or even empty array! And no need to guess which operator we should use `==` or `===` or even `====` to be more confident?
+`Tuple` also implements interfaces `ArrayAccess`, `Countable` and `Iterator`, but ther is no methods like `pushed` and `spliced` which could change the length of the tuple. But you still can use `count`,  `foreach` and access element using `[$i]` syntax.
+
+You can also replace elements with method `with`.
 
 
 
-#### 2.2 Variants
+#### Records
 
-As you may notice class `MaybeUser` was defined using type variable. Lets check out how class Maybe is defined in the library:
+Records are just associative arrays. Like tuples they have fixed length. Let's create simple record representing user of the system:
 
 ```php
-abstract class Maybe extends Variants
+use Phpt\Types\Record;
+class User extends Record
 {
-  static $variants = [
-    'Just' => ['a'],   // type variable
-    'Nothing' => []
+  static $type = [
+    'id' => 'int',
+    'name' => 'string',
+    'rating' => 'float'
   ];
 }
+
+$user = new User([
+  'id' => 1234,
+  'name' => 'John',
+  'rating' => 4.9
+]);
 ```
 
-Class `Phpt\Types\Variants` is kind of enum but with payload. You can think of it as a generalization of `Maybe`. `Maybe` has only two variants, and only one with payload, but with `Variants` you can construct almost any type!
-
-Lets take previous example, but create a function `findByName` which can return: 1) User with exactly given name or 2) User which has only first or last name matched or 3) Nothing.
-
-Here we need more than `Maybe`. Lets create type `NameSearchResult`:
+We can use `count` , array access and `foreach` with records. Method `with` also works. But you can access elements also in OOP style:
 
 ```php
-use Phpt\Types\Variants;
-class NameSearchResult extends Variants
-{
-  static $variants = [
-    'Exact' => [User::class],
-    'Partial' => [User::class],
-    'Nothing' => []
-  ];
-}
-```
-
-So, our method `findByName` will return `NameSearchResult` instance. And again we can use "maching" for dealing with this result:
-
-```php
-$result = User::findByName('Vasily Petroff');
-
-if ($result->isNothing()) {
-  // No user found
-}
-elseif ($result->isPartial()) {
-  $user = $result->getPartial();
-  // Do something with found result
-}
-else {
-  $user = $result->getExact();
-  // Do something with found result
-}
+echo $user->name; // will print "John"
 ```
 
 
 
-#### 2.3 Formal description of Variants
+#### Enum
 
-Any instance of `Phpt\Types\Variants` have _n_ _type constructors_. Type constructor is just string representing variant. It is recommended to use capitalized form for type constructor.
-
-Each type constructor may have a *payload*. Payload is one or more typed values.
-
-If type constructor has a payload there are two methods available `is*` and `get*`, where * is name of constructor. Method `is*` return true if value was created with given constructor. Method `get*` returns payload as array of typed values. If there is only one value in payload it will be returned directly (without wrapping into array).
-
-If type doesn't have a payload only method `is*` is available.
-
-
-
-#### 2.4 Imutability and mutation
-
-Variants are immutable. There is no way to change anything.
-
-
-
-#### 2.5 Recursion
-
-You can define mixed type recursively. It is useful for such of structures like trees and linked lists. There is an example of binary tree of integer values below:
-
-```php
-class Tree extends Variants
-{
-  static $variants = [
-    'Empty' => [],
-    'Node' => ['int', Tree::class, Tree::class]
-  ];
-}
-```
-
-
-
-#### 2.6 Checking equality
-
-There is method `equal($value)` . It works in the same way as method of class `Type` (see §1.6).
-
-
-
-
-
-### 3. Enum
-
-Class `Phpt\Types\Enum` can be used for cteating enumerations. Lets create type describing state of traffic light:
+Enums are coming from C language. If you have some variants (more than two, so you can't use boolean) you can create an enum. For example, we can create model for traffic light:
 
 ```php
 use Phpt\Types\Enum;
 class TrafficLight extends Enum
 {
-  static $variants = ['Red', 'Yellow', 'Green'];
+  static $type = [':Red', ':Yellow', ':Green'];
 }
+
+$t = new TrafficLight('Red');
 ```
 
-
-
-#### 3.1 Value creation
-
-```php
-$t = new TrafficLight('Green');
-```
-
-
-
-#### 3.2 Value matching
+Names of variants should start with semicolon. You can match value using special `is...` methods:
 
 ```php
 if ($t->isRed()) {
@@ -385,53 +199,215 @@ if ($t->isGreen()) {
 
 
 
-#### 3.4 Imutability and mutation
+#### Variants
 
-Enum instances are immutable. There is no way to change it.
+Variants are mix of Enum with typed values. While enum can have only state selected from possible variants, Variants can have for each variant one typed value. For example, if some value can be either integer or string, we can represent it's type as described below:
 
+```php
+use Phpt\Types\Variants;
+class IntOrString extends Variants
+{
+  static $type = [
+    ':Int' => 'int',
+    ':Str' => 'string'
+  ];
+}
 
+$x = new IntOrString('Int', 42);
+```
 
-#### 3.5 Checking equality
+You can match value using `is...` methods:
 
-There is method `equal($value)` . It works in the same way as method of class `Type` (see §1.6).
+```php
+if ($x->isInt()) {
+  // Do computation...
+}
+if ($t->isStr()) {
+  // Do smth else
+}
+```
 
+You can access inner value using `->` syntax (name of property can be in lower case for readability):
 
+```php
+$y = new IntOrString('Str', 'foo');
 
-
-
-### 4. Internal representation
-
-All three classes: `Type`,  `Enum` and `Variants` are based on the same idea: ther is internal value and methods controlling it. With special methods you can get this internal representation. Internal representation (IR) in all cases (if you followed the rule from §1.2) will be a value combined from php arrays and scalars. That is you always can encode IR in JSON format. You also can revive instance from corresponding IR.
-
-
-
-#### 4.1 Method `unwrap`
-
-You can use this method for retrieving internal representation.
-
-In case of `Type` IR will be just value: for scalars of types `bool`, `int`, `float` and `string` it will be a scalar, for complex types it will be an array. For instances of classes it will be result of method `unwrap` calling on the instance. That is, if you are about to use your own custom class as a typed value you need to implement that method.
-
-In case of `Enum` it will be just an integer representing index of variant.
-
-In case of `Variants` it will be an array of two elements, where
-
-0. Is index of variant
-1. Array of IRs of values in payload
-
-
-
-#### 4.2 Method `wrap`
-
-Revives instance from IR. This method is static, so you should call it on class.
-
-
-
-#### 4.3 Method `encode`
-
-Returns IR in JSON encoding.
+if ($y->isStr()) {
+  echo $y->str; // will print "foo";
+}
+```
 
 
 
-#### 4.4 Method `decode`
+#### Maybe
 
-Revives instance from JSON.
+Maybe is a particular case of variants, defined in Phpt libraryas follows:
+
+```php
+abstract class Maybe extends Variants
+{
+  static $variants = [
+    ':Just' => 'a',			// Type variable. Any type can be here depends on child class.
+    ':Nothing' => null  // No type here. That means that this variant does not expect any value.
+  ];
+}
+```
+
+If you know Haskell or any other functional language, you may know about "Maybe". "Maybe" is special type, which represents value in context of possible failure. For example, functions like `strpos` returns result only if result is found. In PHP world in case of failure `strpos` returns false which may cause sometimes type errors. In function languages `strpos` would return `MaybeInt` which can be defined as follows:
+
+```php
+class MaybeInt extends Maybe
+{
+  static $a = 'int'; // here we define what 'a' means.
+}
+```
+
+As normal instance of `Variants` instance of `MaybeInt` also provides `is...` methods and named properties:
+
+```php
+$result = maybe_strpos($needle, $haystack); // imagine that this PHP function exists and returns MaybeInt
+if ($result->isNothing()) {
+  // Not found
+}
+if ($result->isJust()) {
+  $pos = $result->just;
+  // Do something with this number
+}
+```
+
+ Of course, in case  `Nothing` there is no available property to read.
+
+
+
+#### Tree
+
+Tree is example of power of Variants. You can define variants recursively! In our example Tree is binary and can be: 1) empty 2) contains some integer data and two inner branches:
+
+```php
+class Tree extends Variants
+{
+  static $type = [
+    ':Empty' => null,
+    ':Nodes' => [
+      'data' => 'int',
+      'left' => Tree::class,
+      'right' => Tree::class
+    ]
+  ];
+}
+```
+
+
+
+### 3. Type checking 
+
+Main feature of this library is type checking. You can always be sure that you will deal with desired type of data. Library is very strict and if there will be type mismatch, you'll get an exception. Types can be very complex, but they have simple notation.
+
+When we defined `ListOfInt` class we already used type notation:
+
+```php
+class ListOfInt extends ListOf
+{
+  static $type = ['int']; // This construction means "List of integers".
+}
+```
+
+Variable $type is only one required value to be defined. It can be:
+
+- Scalar value
+  - Integer, defined by string `'int'`
+  - Float, defined by string `'float'`
+  - String, defined by string `'string'`
+  - Boolean, defined by string `'bool'`
+  - Instance of class, defined by it's class name. Class should implement `Php\Abstract\TypedValueInterface`.
+  
+- Complex value
+  - List, defined by array with one element `[*]`, where * is either scalar of complex type. All elements in list must have same type.
+  - Tuple, defined by array with _n_ elements `[*, ...]`, where _n_ > 1 and * means the same as for lists. Elements of tuple may have different types.
+  - Record, defined by associative array `['key1' => *, 'key2' => *, ...]`, Record should have at least one string key. Elements of record may have different types.
+  - Enum, defined by array `[':Variant1', ':Variant2', ...]`
+  - Variants, defined by `[':Variant1' => *, ':Variant2' => *, ...]`
+  
+- Type variable. Letters from `'a'` to `'h'` are resefved for type variables. So, you can create abstract type with type variables instead of final types and in child classes define those types.
+
+  
+
+### 4. Nested structures
+
+With nested structure you can define very complex values. And library provides very straightforward interface for data manipulation. For example, lets  create model for contacts as list of records:
+
+```php
+class ListOfRecords extends ListOf
+{
+  static $type = [[
+    'name' => 'string',
+    'email' => 'string'
+  ]]
+}
+
+
+$myContacts = getContacts(); // assume that this function exists and return ListOfRecords
+
+// lets print out our contacts
+foreach ($myContacts as $contact) {
+  echo $contact->name.': '.$contact->email."\n";
+}
+
+// add new contact
+$myContacts = $myContacts->pushed(['name' => 'Amy', 'email' => 'amy.adams@gmail.com']);
+
+// edit one of contacts
+$myContacts = $myContacts[$n]->with(['email' => 'new.email@mail.com']);
+```
+
+
+
+### 5. Other features
+
+#### Checking equality
+
+There is method `equal($value)` which takes value you wan compare with. Two typed values are equal if:
+
+1. They both are instances of the same class, i.e both have the same type
+2. They have equal content
+
+#### JSON interoperability
+
+Methods `decode` and `encode` are available on each typed values.
+
+
+
+### 6. Error codes
+
+| Code | String representation | Defined in |
+| ---- | --------------------- | ------- |
+| 100 | Int value expected. | src/Types/Enum.php:14 |
+| 101 | Unexpected value $ir. | src/Types/Enum.php:16 |
+| 300 | Element [$offset] is not defined. | src/Abstractions/ArrayTrait.php:18 |
+| 301 | Object is immutable. | src/Abstractions/ArrayTrait.php:42, 54 |
+| 400 | Wrong type signature given. | src/Abstractions/Enum.php:9 |
+| 401 | $typeError | src/Abstractions/Enum.php:10 |
+| 402 | Unknown variant "$variant" used by function "$name". | src/Abstractions/Enum.php:36 |
+| 403 | Unknown method "$name". | src/Abstractions/Enum.php:40 |
+| 500 | Wrong type signature given. | src/Abstractions/TypedTuple.php:11 |
+| 501 | $typeError | src/Abstractions/TypedTuple.php:12 |
+| 502 | Key $i is not defined. | src/Abstractions/TypedTuple.php:43 |
+| 600 | JSON given is malformed. | src/Abstractions/TypedValue.php:189 |
+| 700 | Class "$signature" should implement TypedValueInteface. | src/Abstractions/TypeSignature.php:84 |
+| 701 | Unknown scalar type "$signature". | src/Abstractions/TypeSignature.php:88 |
+| 702 | Complex type signature is empty. | src/Abstractions/TypeSignature.php:93 |
+| 703 | Incorrect type signature. | src/Abstractions/TypeSignature.php:126 |
+| 704 | Unknown method "$name". | src/Abstractions/TypeSignature.php:142 |
+| 705 | Unknown property "$name". | src/Abstractions/TypeSignature.php:167 |
+| 800 | Wrong type signature given. | src/Abstractions/TypeVariants.php:9 |
+| 801 | $typeError | src/Abstractions/TypeVariants.php:10 |
+| 802 | Unknown constructor "$constructor" used by function "$name". | src/Abstractions/TypeVariants.php:51 |
+| 803 | Unknown method "$name". | src/Abstractions/TypeVariants.php:55 |
+| 804 | Unknown property "$name". | src/Abstractions/TypeVariants.php:72 |
+| 900 | Wrong type signature given. | src/Abstractions/TypedRecord.php:11 |
+| 901 | $typeError | src/Abstractions/TypedRecord.php:12 |
+| 902 | Key $key is not defined. | src/Abstractions/TypedRecord.php:43 |
+| 903 | Property $name is not defined. | src/Abstractions/TypedRecord.php:72 |
+| 1000 | Wrong type signature given. | src/Abstractions/TypedList.php:11 |
+| 1001 | $typeError | src/Abstractions/TypedList.php:12, 88, 116 |
+| 1002 | Key $key is not defined. | src/Abstractions/TypedList.php:127 |

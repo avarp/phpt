@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\TypedList;
+use Phpt\Abstractions\TypedTuple;
 
 
-abstract class ListOf extends TypedList
+abstract class Tuple extends TypedTuple
 {
   public function __construct(array $values)
   {

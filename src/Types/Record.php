@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 namespace Phpt\Types;
-use Phpt\Abstractions\TypedList;
+use Phpt\Abstractions\TypedRecord;
 
 
-abstract class ListOf extends TypedList
+abstract class Record extends TypedRecord
 {
   public function __construct(array $values)
   {

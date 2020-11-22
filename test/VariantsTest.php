@@ -1,113 +1,92 @@
 <?php
 use PHPUnit\Framework\TestCase;
+use Phpt\Abstractions\TypeVariants;
+use Phpt\Abstractions\TypeSignature;
 use Phpt\Types\Variants;
 
 
-class ExampleVariants extends Variants
+class MaybeInt extends Variants
 {
-  static $variants = [
-    'Empty' => [],
-    'Single' => ['int'],
-    'Multiple' => ['int', 'bool', 'string']
+  static $type = [
+    ':Just' => 'int',
+    ':Nothing' => null
   ];
 }
 
 
 class VariantsTest extends TestCase
 {
-  public function testSimple()
+  public function testConstructor()
   {
-    $v = new ExampleVariants('Empty');
-    $this->assertTrue($v->isEmpty());
+    $x = new MaybeInt('Nothing');
+    $this->assertTrue($x->isNothing());
 
-    $v = new ExampleVariants('Single', 42);
-    $this->assertTrue($v->isSingle());
-    $this->assertSame(42, $v->getSingle());
+    $x = new MaybeInt('Just', 42);
+    $this->assertTrue($x->isJust());
+    $this->assertSame(42, $x->just);
 
-    $v = new ExampleVariants('Multiple', 42, true, 'foo');
-    $this->assertTrue($v->isMultiple());
-    $this->assertSame([42, true, 'foo'], $v->getMultiple());
-    $this->assertSame([2, [42, true, 'foo']], $v->unwrap());
+    $x = new MaybeInt([0, 42]);
+    $this->assertTrue($x->isJust());
+    $this->assertSame(42, $x->just);
 
-    $v = ExampleVariants::wrap([2, [54, false, 'ok']]);
-    $this->assertTrue($v->isMultiple());
-    $this->assertSame([54, false, 'ok'], $v->getMultiple());
+    $x = new MaybeInt(['Nothing', null]);
+    $this->assertTrue($x->isNothing());
   }
 
 
-
-
-  public function testConstructWithWrongConstructor()
+  public function testConstructorWrongTypeSignature()
   {
-    $this->expectExceptionCode(301);
-    $e = new ExampleVariants('Whoops', 45);
+    $this->expectExceptionCode(800);
+    $e = new TypeVariants(new TypeSignature(['a' => 'int']), ['a' => 42]);
   }
 
 
-
-
-  public function testConstructWithWrongAmountOfParameters()
+  public function testUnwrap()
   {
-    $this->expectExceptionCode(302);
-    $e = new ExampleVariants('Single', 45, 55);
+    $x = new MaybeInt('Just', 1000);
+    $this->assertSame([0, 1000], $x->unwrap());
+
+    $x = new MaybeInt('Nothing');
+    $this->assertSame([1, null], $x->unwrap());
   }
 
 
-
-
-  public function testConstructWithWrongTypes()
+  public function testEncodeDecodeEqual()
   {
-    $this->expectExceptionCode(101);
-    $e = new ExampleVariants('Multiple', 45.5, true, 'bar');
+    $x1 = new MaybeInt('Just', -3);
+    $x2 = MaybeInt::decode($x1->encode());
+    $this->assertTrue($x1->equal($x2));
+    $this->assertTrue($x2->equal($x1));
   }
 
 
-
-
-  public function testIsWithWrongConstructor()
+  public function testConstructorTypeCheckingError()
   {
-    $this->expectExceptionCode(303);
-    $e = new ExampleVariants('Multiple', 45, true, 'bar');
-    $e->isBlaBla();
+    $this->expectExceptionCode(801);
+    $x = new MaybeInt('Just', 42.5);
   }
 
 
-
-
-  public function testGetWithWrongConstructor()
+  public function testUnknownConstructor()
   {
-    $this->expectExceptionCode(303);
-    $e = new ExampleVariants('Multiple', 45, true, 'bar');
-    $e->getBlaBla();
+    $this->expectExceptionCode(802);
+    $x = new MaybeInt('Nothing');
+    $x->isUnknown();
   }
-
-
-
-
-  public function testGetConstructorMismatch()
-  {
-    $this->expectExceptionCode(304);
-    $e = new ExampleVariants('Multiple', 45, true, 'bar');
-    $e->getSingle();
-  }
-
-
-
-
-  public function testGetNothing()
-  {
-    $this->expectExceptionCode(305);
-    $e = new ExampleVariants('Empty');
-    $e->getEmpty();
-  }
-
-
 
 
   public function testUnknownMethod()
   {
-    $this->expectExceptionCode(306);
-    $e = new ExampleVariants('Empty');
-    $e->unknownMethod();
+    $this->expectExceptionCode(803);
+    $x = new MaybeInt('Just', 1);
+    $x->unknownMethod();
+  }
+
+
+  public function testUnknownProperty()
+  {
+    $this->expectExceptionCode(804);
+    $x = new MaybeInt('Nothing');
+    $a = $x->nothing;
   }
 }

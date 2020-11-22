@@ -1,11 +1,13 @@
 <?php
 use PHPUnit\Framework\TestCase;
+use Phpt\Abstractions\Enum as AnyEnum;
+use Phpt\Abstractions\TypeSignature;
 use Phpt\Types\Enum;
 
 
-class EnumExample extends Enum
+class ABC extends Enum
 {
-  static $variants = ['A', 'B', 'C'];
+  static $type = [':A', ':B', ':C'];
 }
 
 
@@ -13,60 +15,66 @@ class EnumExample extends Enum
 
 class EnumTest extends TestCase
 {
-  public function testPositive()
+  public function testConstructor()
   {
-    $e = new EnumExample('B');
+    $e = new ABC('B');
     $this->assertTrue($e->isB());
     $this->assertFalse($e->isA());
     $this->assertFalse($e->isC());
     $this->assertSame(1, $e->unwrap());
-    $this->assertTrue($e->equal(EnumExample::decode($e->encode())));
+    $this->assertTrue($e->equal(ABC::decode($e->encode())));
   }
 
 
+  public function testConstructorWrongTypeSignature()
+  {
+    $this->expectExceptionCode(400);
+    $e = new AnyEnum(new TypeSignature('string'), 'A');
+  }
+
+
+  public function testConstructorWithIndexOfVariant()
+  {
+    $e = new ABC(2);
+    $this->assertTrue($e->isC());
+  }
+
+
+  public function testUnwrap()
+  {
+    $e = new ABC('A');
+    $this->assertSame(0, $e->unwrap());
+  }
+
+
+  public function testEncodeDecodeEqual()
+  {
+    $e1 = new ABC('B');
+    $e2 = ABC::decode($e1->encode());
+    $this->assertTrue($e1->equal($e2));
+    $this->assertTrue($e2->equal($e1));
+  }
 
 
   public function testUndefinedVariant()
   {
-    $this->expectExceptionCode(201);
-    $e = new EnumExample('Z');
+    $this->expectExceptionCode(401);
+    $e = new ABC('Z');
   }
-
-
 
 
   public function testUnknownVariant()
   {
-    $this->expectExceptionCode(202);
-    $e = new EnumExample('C');
+    $this->expectExceptionCode(402);
+    $e = new ABC('C');
     $e->isZ();
   }
 
 
-
-
   public function testUnknownMethod()
   {
-    $this->expectExceptionCode(203);
-    $e = new EnumExample('B');
+    $this->expectExceptionCode(403);
+    $e = new ABC('B');
     $e->unknownMethod();
-  }
-
-
-
-
-  public function testWrongTypeToWrap()
-  {
-    $this->expectExceptionCode(204);
-    $e = EnumExample::wrap('B');
-  }
-
-
-
-
-  public function testWrongValueToWrap()
-  {
-    $this->expectExceptionCode(205);
-    $e = EnumExample::wrap(3);
   }
 }

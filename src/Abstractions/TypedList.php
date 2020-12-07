@@ -36,9 +36,9 @@ class TypedList extends TypedValue implements \ArrayAccess, \Iterator, \Countabl
   /**
    * Get new list with added values to the end
    */
-  public function pushed(...$elements): TypedList
+  public function push(...$elements): TypedList
   {
-    return $this->spliced(count($this->_ir), 0, $elements);
+    return $this->splice(count($this->_ir), 0, $elements);
   }
 
 
@@ -47,9 +47,9 @@ class TypedList extends TypedValue implements \ArrayAccess, \Iterator, \Countabl
   /**
    * Get new list with dropped values from the end
    */
-  public function popped(int $n=1): TypedList
+  public function pop(int $n=1): TypedList
   {
-    return $this->spliced(count($this->_ir) - $n, $n);
+    return $this->splice(count($this->_ir) - $n, $n);
   }
 
 
@@ -58,9 +58,9 @@ class TypedList extends TypedValue implements \ArrayAccess, \Iterator, \Countabl
   /**
    * Get new list with dropped values from the start
    */
-  public function shifted(int $n=1): TypedList
+  public function shift(int $n=1): TypedList
   {
-    return $this->spliced(0, $n);
+    return $this->splice(0, $n);
   }
 
 
@@ -69,9 +69,9 @@ class TypedList extends TypedValue implements \ArrayAccess, \Iterator, \Countabl
   /**
    * Get new list with added values to the start
    */
-  public function unshifted(...$elements): TypedList
+  public function unshift(...$elements): TypedList
   {
-    return $this->spliced(0, 0, $elements);
+    return $this->splice(0, 0, $elements);
   }
 
 
@@ -80,7 +80,7 @@ class TypedList extends TypedValue implements \ArrayAccess, \Iterator, \Countabl
   /**
    * Get new list with replaced part
    */
-  public function spliced(int $offset, int $length, array $replacement=[]): TypedList
+  public function splice(int $offset, int $length, array $replacement=[]): TypedList
   {    
     if (!empty($typeError = $this->_type->check($replacement))) self::error(1001, $typeError);
 

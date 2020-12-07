@@ -81,46 +81,46 @@ class ListOfTest extends TestCase
   }
 
 
-  public function testPushed()
+  public function testPush()
   {
     $list1 = new ListOfInt([]);
-    $list2 = $list1->pushed(1, 2, 3);
+    $list2 = $list1->push(1, 2, 3);
     $this->assertSame([], $list1->unwrap());
     $this->assertSame([1, 2, 3], $list2->unwrap());
   }
 
 
-  public function testPopped()
+  public function testPop()
   {
     $list1 = new ListOfInt([1, 2, 3, 4]);
-    $list2 = $list1->popped(2);
+    $list2 = $list1->pop(2);
     $this->assertSame([1, 2, 3, 4], $list1->unwrap());
     $this->assertSame([1, 2], $list2->unwrap());
   }
 
 
-  public function testShifted()
+  public function testShift()
   {
     $list1 = new ListOfInt([1, 2, 3, 4]);
-    $list2 = $list1->shifted(2);
+    $list2 = $list1->shift(2);
     $this->assertSame([1, 2, 3, 4], $list1->unwrap());
     $this->assertSame([3, 4], $list2->unwrap());
   }
 
 
-  public function testUnshifted()
+  public function testUnshift()
   {
     $list1 = new ListOfInt([3, 4]);
-    $list2 = $list1->unshifted(1, 2);
+    $list2 = $list1->unshift(1, 2);
     $this->assertSame([3, 4], $list1->unwrap());
     $this->assertSame([1, 2, 3, 4], $list2->unwrap());
   }
 
 
-  public function testSpliced()
+  public function testSplice()
   {
     $list1 = new ListOfInt([1, 0, 0, 0, 4]);
-    $list2 = $list1->spliced(1, 3, [2, 3]);
+    $list2 = $list1->splice(1, 3, [2, 3]);
     $this->assertSame([1, 0, 0, 0, 4], $list1->unwrap());
     $this->assertSame([1, 2, 3, 4], $list2->unwrap());
   }
@@ -138,7 +138,7 @@ class ListOfTest extends TestCase
   public function testPropagation()
   {
     $list1 = new ListOfListOfBool([[true, true], [], [true, false, false]]);
-    $list2 = $list1[1]->pushed(false, false);
+    $list2 = $list1[1]->push(false, false);
     $this->assertSame([[true, true], [], [true, false, false]], $list1->unwrap());
     $this->assertSame([[true, true], [false, false], [true, false, false]], $list2->unwrap());
   }
@@ -172,7 +172,7 @@ class ListOfTest extends TestCase
   {
     $this->expectExceptionCode(1001);
     $list = new ListOfInt([10, 11]);
-    $list = $list->spliced(0, 1, [19, 3.141]);
+    $list = $list->splice(0, 1, [19, 3.141]);
   }
 
 

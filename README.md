@@ -77,19 +77,19 @@ Comparing to PHP arrays lists are immutable. So, you can't modify elements of th
 
 ```php
 $list = new ListOfInt([]); // empty list
-$list = $list->pushed(1);  // [1]
-$list = $list->pushed(2, 3, 4, 5); // [1,2,3,4,5] 
+$list = $list->push(1);  // [1]
+$list = $list->push(2, 3, 4, 5); // [1,2,3,4,5] 
 ```
 
 So, instead of mutation, every time new list will be created. If you need to have old copy, save result into new variable. If not - just overwrite the old one!
 
 There is a bunch of function you can use with lists:
 
-- `pushed(...$elements)` Returns new list with _n_ values pushed to the end
-- `popped(int $n=1)` Returns new list with _n_ values dropped from the end
-- `shifted(int $n=1)` Returns new list with _n_ values pushed to the start
-- `unshifted(...$elements)` Returns new list with _n_ values dropped from the start
-- `spliced(int $offset, int $length, array $replacement=[])` Returns new list "spliced" by function `array_splice`
+- `push(...$elements)` Returns new list with _n_ values pushed to the end
+- `pop(int $n=1)` Returns new list with _n_ values dropped from the end
+- `shift(int $n=1)` Returns new list with _n_ values pushed to the start
+- `unshift(...$elements)` Returns new list with _n_ values dropped from the start
+- `splic(int $offset, int $length, array $replacement=[])` Returns new list "spliced" by function `array_splice`
 
 Method `with` allows you to re-assign values according their keys:
 
@@ -133,7 +133,7 @@ class Point3D extends Tuple
 $origin = new Point3D([0.0, 0.0, 0.0]);
 ```
 
-`Tuple` also implements interfaces `ArrayAccess`, `Countable` and `Iterator`, but ther is no methods like `pushed` and `spliced` which could change the length of the tuple. But you still can use `count`,  `foreach` and access element using `[$i]` syntax.
+`Tuple` also implements interfaces `ArrayAccess`, `Countable` and `Iterator`, but ther is no methods like `push` and `splice` which could change the length of the tuple. But you still can use `count`,  `foreach` and access element using `[$i]` syntax.
 
 You can also replace elements with method `with`.
 
@@ -227,7 +227,7 @@ if ($t->isStr()) {
 }
 ```
 
-You can access inner value using `->` syntax (name of property can be in lower case for readability):
+You can access inner value using OOP style (name of property can be in lower case for readability):
 
 ```php
 $y = new IntOrString('Str', 'foo');
@@ -241,7 +241,7 @@ if ($y->isStr()) {
 
 #### Maybe
 
-Maybe is a particular case of variants, defined in Phpt libraryas follows:
+Maybe is a particular case of variants, defined in Phpt library as follows:
 
 ```php
 abstract class Maybe extends Variants
@@ -275,7 +275,7 @@ if ($result->isJust()) {
 }
 ```
 
- Of course, in case  `Nothing` there is no available property to read.
+Of course, in case  `Nothing` there is no available property to read.
 
 
 
@@ -287,9 +287,9 @@ Tree is example of power of Variants. You can define variants recursively! In ou
 class Tree extends Variants
 {
   static $type = [
-    ':Empty' => null,
-    ':Nodes' => [
-      'data' => 'int',
+    ':Empty' => null, // Tree can be empty
+    ':Nodes' => [     // Or it contains data and left and right subtrees
+      'data' => 'int', 
       'left' => Tree::class,
       'right' => Tree::class
     ]
@@ -354,7 +354,7 @@ foreach ($myContacts as $contact) {
 }
 
 // add new contact
-$myContacts = $myContacts->pushed(['name' => 'Amy', 'email' => 'amy.adams@gmail.com']);
+$myContacts = $myContacts->push(['name' => 'Amy', 'email' => 'amy.adams@gmail.com']);
 
 // edit one of contacts
 $myContacts = $myContacts[$n]->with(['email' => 'new.email@mail.com']);

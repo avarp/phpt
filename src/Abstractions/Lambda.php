@@ -5,8 +5,8 @@ namespace Phpt\Abstractions;
 class Lambda
 {
   protected $f;
-  protected int $arity;
-  public array $args;
+  protected $arity;
+  public $args;
 
 
 

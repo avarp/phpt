@@ -12,7 +12,7 @@ abstract class TypedValue implements TypedValueInterface
   /**
    * Type of the value
    */
-  protected TypeSignature $_type;
+  protected $_type;
 
   /**
    * Parent if this is inner element of other typed value

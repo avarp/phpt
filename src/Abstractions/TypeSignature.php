@@ -7,8 +7,8 @@ class TypeSignature
   /**
    * Internal representation of the type signature
    */
-  protected array $type;
-  protected string $hash;
+  protected $type;
+  protected $hash;
 
 
   /**
@@ -261,7 +261,11 @@ class TypeSignature
 
         if ($this->isRecord()) {
           $innerTypes = $this->innerTypes;
-          if (isRegularArray($value) || array_keys($value) != array_keys($innerTypes))
+          if (
+            isRegularArray($value)
+            || !empty(array_diff(array_keys($value), array_keys($innerTypes)))
+            || !empty(array_diff(array_keys($innerTypes), array_keys($value)))
+          )
             return 'Associative array with keys '.implode(', ', array_keys($innerTypes)).' is expected.';
           foreach ($value as $key => $x)
             if ($innerTypes[$key]->isScalar())

@@ -21,6 +21,8 @@ class RecordTest extends TestCase
     $this->assertSame('John', $user->name);
     $this->assertSame('John', $user['name']);
     $this->assertSame(2, count($user));
+    // keys are not in order but it will not cause an error
+    $user2 = new User(['name' => 'John', 'id' => 123]);
   }
 
 

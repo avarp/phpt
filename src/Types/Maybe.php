@@ -4,7 +4,7 @@ namespace Phpt\Types;
 
 abstract class Maybe extends Variants
 {
-  static $variants = [
+  static $type = [
     ':Just' => 'a',
     ':Nothing' => null
   ];

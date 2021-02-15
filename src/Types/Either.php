@@ -4,7 +4,7 @@ namespace Phpt\Types;
 
 abstract class Either extends Variants
 {
-  static $variants = [
+  static $type = [
     ':Left' => 'a',
     ':Right' => 'b'
   ];

@@ -54,6 +54,15 @@ class TupleTest extends TestCase
   }
 
 
+  public function testEncodeDecodeEqualWithBuiltInFunction()
+  {
+    $t1 = new ExampleTuple(['Bar', false]);
+    $t2 = ExampleTuple::decode(json_encode($t1));
+    $this->assertTrue($t1->equal($t2));
+    $this->assertTrue($t2->equal($t1));
+  }
+
+
   public function testWith()
   {
     $t = new ExampleTuple(['Bar', false]);

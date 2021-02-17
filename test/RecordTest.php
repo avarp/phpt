@@ -58,6 +58,15 @@ class RecordTest extends TestCase
   }
 
 
+  public function testEncodeDecodeEqualWithBuiltInFunction()
+  {
+    $user1 = new User(['id' => 17, 'name' => 'Bla']);
+    $user2 = User::decode(json_encode($user1));
+    $this->assertTrue($user1->equal($user2));
+    $this->assertTrue($user2->equal($user1));
+  }
+
+
   public function testWith()
   {
     $user = new User(['id' => 10, 'name' => 'Darren']);

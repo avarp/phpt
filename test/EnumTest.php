@@ -56,6 +56,15 @@ class EnumTest extends TestCase
   }
 
 
+  public function testEncodeDecodeEqualWithBuiltInFunction()
+  {
+    $e1 = new ABC('B');
+    $e2 = ABC::decode(json_encode($e1));
+    $this->assertTrue($e1->equal($e2));
+    $this->assertTrue($e2->equal($e1));
+  }
+
+
   public function testUndefinedVariant()
   {
     $this->expectExceptionCode(401);

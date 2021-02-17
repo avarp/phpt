@@ -81,6 +81,15 @@ class ListOfTest extends TestCase
   }
 
 
+  public function testEncodeDecodeEqualWithBuiltInFunction()
+  {
+    $list1 = new ListOfListOfBool([[true, true], [], [true, false, false]]);
+    $list2 = ListOfListOfBool::decode(json_encode($list1));
+    $this->assertTrue($list1->equal($list2));
+    $this->assertTrue($list2->equal($list1));
+  }
+
+
   public function testPush()
   {
     $list1 = new ListOfInt([]);

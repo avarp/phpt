@@ -2,7 +2,7 @@
 namespace Phpt\Abstractions;
 
 
-abstract class TypedValue implements TypedValueInterface
+abstract class TypedValue implements TypedValueInterface, \JsonSerializable
 {
   /**
    * Internal representation of value
@@ -162,6 +162,18 @@ abstract class TypedValue implements TypedValueInterface
   public function encode(): string
   {
     return json_encode($this->unwrap());
+  }
+
+
+
+
+  /**
+   * Encode value to JSON (version for built-in function "json_encode")
+   * @return mixed JSON-representable value
+   */
+  public function jsonSerialize()
+  {
+    return $this->unwrap();
   }
 
 

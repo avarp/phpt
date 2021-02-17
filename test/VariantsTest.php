@@ -60,6 +60,15 @@ class VariantsTest extends TestCase
   }
 
 
+  public function testEncodeDecodeEqualWithBuiltInFunction()
+  {
+    $x1 = new MaybeInt('Just', -3);
+    $x2 = MaybeInt::decode(json_encode($x1));
+    $this->assertTrue($x1->equal($x2));
+    $this->assertTrue($x2->equal($x1));
+  }
+
+
   public function testConstructorTypeCheckingError()
   {
     $this->expectExceptionCode(801);

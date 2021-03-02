@@ -8,15 +8,15 @@ We used to think of PHP variables as boxes where you can put anything. Does it m
 
 There always was kinda magic we calling type casting. But is this magic black or white? From my experience I can say that about 80% of bugs I ever fixed in PHP code was related to types.
 
-Fortunately, we have type checking in PHP and it prevents us from making stupid type errors. If you still don't understand why types are important, just imageine that you have a program encountered a type error. Who will report you about this error? Angry customer? In case of type checking that kind of code will never leak to production - you even couldn't launch it (you'll get a TypeError).
+Fortunately, we have type checking in PHP and it prevents us from making stupid type errors. If you still don't understand why types are important, just imagine that you have a program encountered a type error. Who will report you about this error? Angry customer? In case of type checking that kind of code will never leak to production - you even couldn't launch it (you'll get a TypeError).
 
-Functional languages have bunch of good types like Maybe, Either and so on. Inspired by Haskell and Elm this package provides a platform for creating strong typed and immutable data structures
+Functional languages have a bunch of good types like Maybe, Either and so on. Inspired by Haskell and Elm this package provides a platform for creating strong typed and immutable data structures.
 
 PHP offers set of pre-defined types such as `int`, `bool` or `string`. With type-hinting you can also use class names as a type. Phpt library provides set of abstract classes, which can be used as a basis for your own types.
 
 ### Installation
 
-Installation with composer: `composer require artem-vorobev/phpt`
+Installation with composer: `composer require avarp/phpt`
 
 You need to require autoload file. Then all Phpt classes are ready!
 
@@ -61,7 +61,7 @@ function average(ListOfInt $list): int
 }
 ```
 
-You can also use `[$i]` notation to access elements of list:
+You can also use array access notation to access elements of list:
 
 ```php
 $list = new ListOfInt([1, 2, 3, 4, 5]);
@@ -133,7 +133,7 @@ class Point3D extends Tuple
 $origin = new Point3D([0.0, 0.0, 0.0]);
 ```
 
-`Tuple` also implements interfaces `ArrayAccess`, `Countable` and `Iterator`, but ther is no methods like `push` and `splice` which could change the length of the tuple. But you still can use `count`,  `foreach` and access element using `[$i]` syntax.
+`Tuple` also implements interfaces `ArrayAccess`, `Countable` and `Iterator`, but there are no methods like `push` and `splice` which could change the length of the tuple. But you still can use `count`,  `foreach` and array access syntax.
 
 You can also replace elements with method `with`.
 
@@ -161,7 +161,7 @@ $user = new User([
 ]);
 ```
 
-We can use `count` , array access and `foreach` with records. Method `with` also works. But you can access elements also in OOP style:
+We can use `count` , array access and `foreach` with records. Method `with` also works. And you can access elements also in OOP style:
 
 ```php
 echo $user->name; // will print "John"
@@ -201,7 +201,7 @@ if ($t->isGreen()) {
 
 #### Variants
 
-Variants are mix of Enum with typed values. While enum can have only state selected from possible variants, Variants can have for each variant one typed value. For example, if some value can be either integer or string, we can represent it's type as described below:
+Variants are the mix of Enum with typed values. While enum can have only state selected from possible variants, Variants can have for each variant one typed value as a payload. For example, if some value can be either integer or string, we can represent it's type as described below:
 
 ```php
 use Phpt\Types\Variants;
@@ -246,12 +246,14 @@ Maybe is a particular case of variants, defined in Phpt library as follows:
 ```php
 abstract class Maybe extends Variants
 {
-  static $variants = [
+  static $type = [
     ':Just' => 'a',			// Type variable. Any type can be here depends on child class.
     ':Nothing' => null  // No type here. That means that this variant does not expect any value.
   ];
 }
 ```
+
+Letters from `'a'` to `'h'` are resefved for type variables. So, you can create abstract type with type variables instead of final types and in child classes define those types.
 
 If you know Haskell or any other functional language, you may know about "Maybe". "Maybe" is special type, which represents value in context of possible failure. For example, functions like `strpos` returns result only if result is found. In PHP world in case of failure `strpos` returns false which may cause sometimes type errors. In function languages `strpos` would return `MaybeInt` which can be defined as follows:
 
@@ -281,7 +283,7 @@ Of course, in case  `Nothing` there is no available property to read.
 
 #### Tree
 
-Tree is example of power of Variants. You can define variants recursively! In our example Tree is binary and can be: 1) empty 2) contains some integer data and two inner branches:
+[Tree](https://en.wikipedia.org/wiki/Binary_tree) is an example of the power of Variants. You can define variants recursively! In our example Tree is binary and can be: 1) empty 2) contains some integer data and two inner branches:
 
 ```php
 class Tree extends Variants
@@ -299,7 +301,101 @@ class Tree extends Variants
 
 
 
-### 3. Type checking 
+### 3. Type constructors and type variables
+
+As you may noticed every time when we need to create a type like `ListOfInt` of `MaybeString` we had to define those classes manually. In real projects this approach will bloat your codebase with such of small classes. We can avoid this using _type constructors_. Phpt can generate type classes on the fly for simple cases using _type variables_ mechanism.
+
+There are 8 possible type variables you can create using letters from `'a'` to `'h'`. Let's take class *ListOf* for example. It is defined as follows:
+
+```php
+abstract class ListOf extends TypedList
+{
+  static $type = ['a']; // type variable $a
+  
+  // ... other code here
+}
+```
+
+Phpt aready knows that *ListOf* is not a final class. And it logically assumes that all classes with names like `ListOf{a}` , which are not defined yet, are classes derived from *ListOf*. And everything placed in `{a}` should be used as a type variable's value.
+
+There is an autoload function in Phpt. When this function receives a class name it matches it with existing patterns and, if match was found, constructs the class on the fly.
+
+#### Example 1.
+
+Let's see how we can get rid of boilerplate code like this:
+
+```php
+namespace Model; // let's assume that we already defined typed value "User" in this namespace
+use Phpt\Types\ListOf;
+
+class ListOfUser extends ListOf {
+  static $a = User::class;
+}
+```
+
+We can just delete that file and still use class `\Model\ListOfUser`. In this case Phpt will take care of this class:
+
+1. Phpt will accept the class name `\Model\ListOfUser` into it's autoload function.
+2. Class name `ListOfUser` will be matched with pattern `ListOf{a}` giving the value of the `a` type variable equal to "User".
+3. Then the code for the class will be created in namespace `\Model` and stored into file in the internal cache of the library.
+4. Finally, the file will be imported using php function `require`.
+
+The library performs these steps only once when class need to be generated. After that it will just autoload created file.
+
+#### Example 2.
+
+Given boilerplate is:
+
+```php
+use Phpt\Types\Maybe;
+
+class MaybeInt extends Maybe
+{
+  static $a = 'int';
+}
+```
+
+Class `MaybeInt` will be matched to the pattern `Maybe{a}` giving the value of the `a` type variable equal to "Int".
+
+"Int", "Float", "Bool" and "String" are reserved values representing scalar types, so Phpt will use scalar type.
+
+#### Patterns.
+
+There are 3 pre-defined patterns for type constructor:
+
+- `Maybe{a}`
+- `Either{a}Or{b}` (this class is like Maybe, but it has a payload for both variants)
+- `ListOf{a}`
+
+#### Limitations.
+
+With current implementation you can't get rid of a code like this:
+
+```php
+namespace Controller;
+use Phpt\Types\ListOf;
+use Model\User;
+
+class ListOfUser extends ListOf {
+  static $a = User::class;
+}
+```
+
+Name `ListOfUser` doesn't and can't contain information about _namespace_ where the class `User` is defined. By default the library will assume that `User` and `ListOfUser` are to be defined in the same namespace. So, if you will give to the library chance to generate class `\Controller\ListOfUser` it will produce the code which will cause an error:
+
+```php
+namespace Controller;
+use Phpt\Types\ListOf;
+// <-- use Model\User; statement is missing!
+
+class ListOfUser extends ListOf {
+  static $a = User::class; // <-- class Controller\User is not defined!
+}
+```
+
+
+
+### 4. Type notation
 
 Main feature of this library is type checking. You can always be sure that you will deal with desired type of data. Library is very strict and if there will be type mismatch, you'll get an exception. Types can be very complex, but they have simple notation.
 
@@ -312,27 +408,37 @@ class ListOfInt extends ListOf
 }
 ```
 
-Variable $type is only one required value to be defined. It can be:
+Variable `$type` is only the required value to be defined. It can be:
 
-- Scalar value
-  - Integer, defined by string `'int'`
-  - Float, defined by string `'float'`
-  - String, defined by string `'string'`
-  - Boolean, defined by string `'bool'`
-  - Instance of class, defined by it's class name. Class should implement `Php\Abstract\TypedValueInterface`.
+- Scalar type
+  - Integer, defined by literal  `'int'`
+  - Float, defined by `'float'`
+  - String, defined by  `'string'`
+  - Boolean, defined by  `'bool'`
+  - An instance of a class, defined by it's class name. The class should implement `Php\Abstract\TypedValueInterface`.
   
-- Complex value
+- Complex type
   - List, defined by array with one element `[*]`, where * is either scalar of complex type. All elements in list must have same type.
   - Tuple, defined by array with _n_ elements `[*, ...]`, where _n_ > 1 and * means the same as for lists. Elements of tuple may have different types.
   - Record, defined by associative array `['key1' => *, 'key2' => *, ...]`, Record should have at least one string key. Elements of record may have different types.
   - Enum, defined by array `[':Variant1', ':Variant2', ...]`
   - Variants, defined by `[':Variant1' => *, ':Variant2' => *, ...]`
   
-- Type variable. Letters from `'a'` to `'h'` are resefved for type variables. So, you can create abstract type with type variables instead of final types and in child classes define those types.
 
-  
+Type checking happens every time you assigning a new value. But you can use type checking mechanisms also for checking regular PHP arrays:
 
-### 4. Nested structures
+```php
+$error = checkType([1, 2, 3, "4"], ['int']);
+//								    a value      a type
+```
+
+Function `checkType` returns human-readable error message if there is a type mismatch or empty string otherwise. That is `''` return value means that the value matches the type.
+
+**IMPORTANT!** If given type is a scalar type defined by a class name  `checkType` will perform only shallow checking. It will check if value is an instance of the class only if value is an object. Otherwise it will pass the value assuming that the class itself is able to perform deep type checking in it's constructor. In general it is recommended to avoid using  scalar types defined by a class name with `checkType` function.
+
+
+
+### 5. Nested structures
 
 With nested structure you can define very complex values. And library provides very straightforward interface for data manipulation. For example, lets  create model for contacts as list of records:
 
@@ -362,22 +468,45 @@ $myContacts = $myContacts[$n]->with(['email' => 'new.email@mail.com']);
 
 
 
-### 5. Other features
+### 6. JSON interoperability
+
+#### Encoding
+
+Method `decode` is available on each typed value. You can also pass instances of `Php\Abstract\TypedValueInterface` to the native PHP function `json_encode` which will give the same result as the method `decode`.
+
+Every type value has corresponding JSON representation. When you will serialize typed values to JSON you will get these results:
+
+| Type     | PHP literal notation                                         | JSON type according to RFC8259                               |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| String   | `'string'`                                                   | [string](https://tools.ietf.org/html/rfc8259#section-7)      |
+| Integer  | `'int'`                                                      | [number](https://tools.ietf.org/html/rfc8259#section-6)      |
+| Float    | `'float'`                                                    | [number](https://tools.ietf.org/html/rfc8259#section-6)      |
+| Boolean  | `'bool'`                                                     | true of false [literals](https://tools.ietf.org/html/rfc8259#section-3) |
+| List     | `[*]`, where * is any type                                   | [array](https://tools.ietf.org/html/rfc8259#section-5)       |
+| Record   | `['key1' => *, 'key2' => *, ...]`, where * is any type       | [object](https://tools.ietf.org/html/rfc8259#section-4)      |
+| Enum     | `[':Variant1', ':Variant2', ...]`                            | [number](https://tools.ietf.org/html/rfc8259#section-6) representing ordering number of variant (starts with 0) |
+| Variants | `[':Variant1' => *, ':Variant2' => *, ...]`, where * is either a type or `null` | [array](https://tools.ietf.org/html/rfc8259#section-5) of 2 elements `[A, B]` where A is [number](https://tools.ietf.org/html/rfc8259#section-6) representing ordering number of variant (starts with 0) and B is either a correspoding to inner type JSON value or [null](https://tools.ietf.org/html/rfc8259#section-3) |
+
+#### Decoding
+
+Static method `decode` is able to revive an instance from it's JSON representation. It will perform type checking and will throw an exception if any type mismatch will be detected.
+
+
+
+### 7. Other features
 
 #### Checking equality
 
-There is method `equal($value)` which takes value you wan compare with. Two typed values are equal if:
+There is method `equal($value)` which takes a value you want compare with. Two typed values are equal if:
 
-1. They both are instances of the same class, i.e both have the same type
+1. They both are instances of the same class
 2. They have equal content
 
-#### JSON interoperability
-
-Methods `decode` and `encode` are available on each typed values.
 
 
 
-### 6. Error codes
+
+### 8. Error codes
 
 | Code | String representation | Defined in |
 | ---- | --------------------- | ------- |

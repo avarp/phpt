@@ -5,21 +5,6 @@ use Phpt\Abstractions\TypeSignature;
 use Phpt\Types\ListOf;
 
 
-class ListOfInt extends ListOf
-{
-  static $type = ['int'];
-}
-
-class ListOfBool extends ListOf
-{
-  static $type = ['bool'];
-}
-
-class ListOfListOfBool extends ListOf
-{
-  static $type = [['bool']];
-}
-
 class ListOfRecords extends ListOf
 {
   static $type = [[

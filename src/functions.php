@@ -3,6 +3,19 @@
 use Phpt\Abstractions\Lambda;
 
 
+spl_autoload_register('\\Phpt\\Abstractions\\RuntimeClassBuilder::autoload');
+
+
+/**
+ * Check type of variable
+ * @param $value value to check
+ * @param $type type to match
+ * @return string an error message or empty string if value matches the type
+ */
+function checkType($value, $type)
+{
+  return (new Phpt\Abstractions\TypeSignature($type))->check($value);
+}
 
 
 /**
@@ -81,7 +94,7 @@ function getOuterFileAndLine(): string
   $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
   foreach ($trace as $t) {
     $file = $t['file'];
-    if (strpos($file, __DIR__) === false) return ' At '.$t['file'].':'.$t['line'];
+    if (strpos($file, __DIR__) === false) return " Possibly caused by $t[file]:$t[line]";
   }
   return '';
 }

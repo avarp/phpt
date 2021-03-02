@@ -215,24 +215,32 @@ class TypeSignature
 
 
 
-  public function check($value): string
+  protected function errmsg(string $path, string $type, $actualValue): string
   {
+    return "$path was expected to be $type, but it is: \n  ".str_replace("\n", "\n  ", var_export($actualValue, true))."\n";
+  }
+
+
+
+
+  public function check($value, string $path='Value'): string
+  {  
     // Check scalars
     if ($this->isScalar()) {
       if ($this->isInt() && !is_int($value)) {
-        return 'Integer is expected.';   
+        return $this->errmsg($path, 'an integer', $value);
       }
       if ($this->isFloat() && !is_float($value) && !is_int($value)) {
-        return 'Float is expected.';
+        return $this->errmsg($path, 'a float', $value);
       }
       if ($this->isString() && !is_string($value)) {
-        return 'String is expected.';
+        return $this->errmsg($path, 'a string', $value);
       }
       if ($this->isBool() && !is_bool($value)) {
-        return 'Bool is expected.';
+        return $this->errmsg($path, 'a boolean value', $value);
       }
       if ($this->isClass() && is_object($value) && !is_a($value, $this->className)) {
-        return 'Instance of '.$this->className.' is expected.';
+        return $this->errmsg($path, "an instance of {$this->className}", $value);
       }
     
     // Check complex values
@@ -240,23 +248,23 @@ class TypeSignature
 
       if ($value instanceof TypedValue) {
         if (!$value->getType()->equal($this))
-          return 'TypedValue instance given has different type than expected.';
+          return $this->errmsg($path, "an instance of a class with type signature equal to {$this->className}", $value);
       } else {
 
         if ($this->isList() && $this->elementsType->isScalar()) {
           if (!isRegularArray($value))
-            return 'Regular array is expected.';
-          foreach ($value as $x)
-            if (!empty($error = $this->elementsType->check($x))) return $error;
+            return $this->errmsg($path, 'a regular array', $value);
+          foreach ($value as $i => $x)
+            if (!empty($error = $this->elementsType->check($x, $path."[$i]"))) return $error;
         }
 
         if ($this->isTuple()) {
           $innerTypes = $this->innerTypes;
           if (!isRegularArray($value) || count($value) != count($innerTypes))
-            return 'Regular array with length '.count($innerTypes).' is expected.';
-          foreach ($value as $index => $x)
-            if ($innerTypes[$index]->isScalar())
-              if (!empty($error = $innerTypes[$index]->check($x))) return $error;
+            return $this->errmsg($path, 'a regular array with '.count($innerTypes).' elements', $value);
+          foreach ($value as $i => $x)
+            if ($innerTypes[$i]->isScalar())
+              if (!empty($error = $innerTypes[$i]->check($x, $path."[$i]"))) return $error;
         }
 
         if ($this->isRecord()) {
@@ -266,36 +274,44 @@ class TypeSignature
             || !empty(array_diff(array_keys($value), array_keys($innerTypes)))
             || !empty(array_diff(array_keys($innerTypes), array_keys($value)))
           )
-            return 'Associative array with keys '.implode(', ', array_keys($innerTypes)).' is expected.';
+            return $this->errmsg($path, 'an associative array with keys ('.implode(', ', array_keys($innerTypes)).')', $value);
           foreach ($value as $key => $x)
             if ($innerTypes[$key]->isScalar())
-              if (!empty($error = $innerTypes[$key]->check($x))) return $error;
+              if (!empty($error = $innerTypes[$key]->check($x, $path."['$key']"))) return $error;
         }
 
         if ($this->isEnum()) {
           if (is_string($value)) {
-            if (!in_array($value, $this->enumVars)) return "Unknown enum variant $value.";
+            if (!in_array($value, $this->enumVars)) {
+              return $this->errmsg($path, 'one of available strings ('.implode(', ', $this->enumVars).')', $value);
+            }
           }
           elseif (is_int($value)) {
-            if ($value < 0 || $value >= count($this->enumVars)) return "Variant index $value is out of bounds.";
+            if ($value < 0 || $value >= count($this->enumVars)) {
+              return $this->errmsg($path, 'an integer from 0 to '.(count($this->enumVars) - 1).' inclusively', $value);
+            }
           }
-          else return 'Enum variant should be a string or int.';
+          else return $this->errmsg($path, 'a string or an integer', $value);
         }
         
         if ($this->isVariants()) {
           if (!isRegularArray($value) || count($value) != 2 || !(is_string($value[0]) || is_int($value[0])))
-            return 'Type variant should be an array [string, *] or [int, *].';
+            return $this->errmsg($path, 'a regular array with type [string, *] or [int, *]', $value);
           if (is_string($value[0])) {
-            if (!array_key_exists($value[0], $this->innerTypes)) return "Unknown type constructor $value[0].";
+            if (!array_key_exists($value[0], $this->innerTypes)) {
+              return $this->errmsg($path.'[0]', 'one of available strings ('.implode(', ', array_keys($this->innerTypes)).')', $value[0]);
+            }
             $innerType = $this->innerTypes[$value[0]];
           } else {
-            if ($value[0] < 0 || $value[0] >= count($this->innerTypes)) return "Variant index $value[0] is out of bounds.";
+            if ($value[0] < 0 || $value[0] >= count($this->innerTypes)) {
+              return $this->errmsg($path.'[0]', 'an integer from 0 to '.(count($this->innerTypes) - 1).' inclusively', $value[0]);
+            }
             $innerType = $this->innerTypes[array_keys($this->innerTypes)[$value[0]]];
           }
           if (is_null($innerType) && !is_null($value[1]))
-            return "Constructor $value[0] does not accept value.";
+            return $this->errmsg($path.'[1]', 'exactly null', $value[1]);
           if (!is_null($innerType) && $innerType->isScalar())
-            return $innerType->check($value[1]);
+            return $innerType->check($value[1], $path.'[1]');
         }
       }
     }

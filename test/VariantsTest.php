@@ -5,15 +5,6 @@ use Phpt\Abstractions\TypeSignature;
 use Phpt\Types\Variants;
 
 
-class MaybeInt extends Variants
-{
-  static $type = [
-    ':Just' => 'int',
-    ':Nothing' => null
-  ];
-}
-
-
 class VariantsTest extends TestCase
 {
   public function testConstructor()

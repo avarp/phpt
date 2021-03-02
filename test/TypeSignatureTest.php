@@ -11,15 +11,6 @@ class ExampleClass
 }
 
 
-class MaybeString extends Variants
-{
-  static $type = [
-    ':Just' => 'string',
-    ':Nothing' => null
-  ];
-}
-
-
 class TypeSignatureTest extends TestCase
 {
   public function testTrivial()
@@ -141,7 +132,7 @@ class TypeSignatureTest extends TestCase
 
   public function testConstructorUnknownScalarType() {
     $this->expectExceptionCode(701);
-    $t = new TypeSignature('blabla');
+    $t = new TypeSignature('s t r i n g');
   }
 
 
@@ -160,64 +151,68 @@ class TypeSignatureTest extends TestCase
   public function testMagicMethodCallUnknownMethod() {
     $this->expectExceptionCode(704);
     $t = new TypeSignature(['int']);
-    $t->isBla();
+    $t->unknownMethod();
   }
 
 
   public function testMagicMethodGetUnknownProperty() {
     $this->expectExceptionCode(705);
     $t = new TypeSignature(['int']);
-    $x = $t->innerTypes;
+    $x = $t->unknownProperty;
   }
 
 
   public function testTypeCheckScalars() {
     $t = new TypeSignature('int');
-    $this->assertSame($t->check('45'), 'Integer is expected.');
+    $this->assertStringStartsWith('Value was expected to be an integer', $t->check('45'));
     $this->assertEmpty($t->check(45));
 
+    // Shorthand for type checking
+    $this->assertStringStartsWith('Value was expected to be an integer', checkType('45', 'int'));
+    $this->assertEmpty(checkType(45, 'int'));
+
     $t = new TypeSignature('float');
-    $this->assertSame($t->check(true), 'Float is expected.');
+    $this->assertStringStartsWith('Value was expected to be a float', $t->check(true));
     $this->assertEmpty($t->check(45));
 
     $t = new TypeSignature('string');
-    $this->assertSame($t->check(0), 'String is expected.');
+    $this->assertStringStartsWith('Value was expected to be a string', $t->check(0));
     $this->assertEmpty($t->check('0'));
 
     $t = new TypeSignature('bool');
-    $this->assertSame($t->check(0), 'Bool is expected.');
+    $this->assertStringStartsWith('Value was expected to be a boolean value', $t->check(0));
     $this->assertEmpty($t->check(false));
 
     $t = new TypeSignature(MaybeString::class);
-    $this->assertSame($t->check((object)[]), 'Instance of '.MaybeString::class.' is expected.');
+    $this->assertStringStartsWith('Value was expected to be an instance of '.MaybeString::class, $t->check((object)[]));
     $this->assertEmpty($t->check(['blabla']));
-    $m = new MaybeString('Just', 'bla');
-    $this->assertEmpty($t->check($m));
+
+    $this->assertEmpty($t->check(new MaybeString('Just', 'bla')));
   }
 
 
   public function testTypeCheckComplex() {
     $t = new TypeSignature(['int']);
-    $this->assertSame($t->check([1 => 1, 2 => 2]), 'Regular array is expected.');
+    $this->assertStringStartsWith('Value was expected to be a regular array', $t->check([1 => 1, 2 => 2]));
     $this->assertEmpty($t->check([0 => 1, 1 => 2]));
   
     $t = new TypeSignature(['int', 'int']);
-    $this->assertSame($t->check([1, 2, 3]), 'Regular array with length 2 is expected.');
+    $this->assertStringStartsWith('Value was expected to be a regular array with 2 elements', $t->check([1, 2, 3]));
     $this->assertEmpty($t->check([1, 2]));
 
     $t = new TypeSignature(['a' => 'int', 'b' => 'int']);
-    $this->assertSame($t->check(['a' => 2]), 'Associative array with keys a, b is expected.');
+    $this->assertStringStartsWith('Value was expected to be an associative array with keys (a, b)', $t->check(['a' => 2]));
     $this->assertEmpty($t->check(['a' => 3, 'b' => 4]));
 
     $t = new TypeSignature([':Red', ':Green', ':Blue']);
-    $this->assertSame($t->check(12), 'Variant index 12 is out of bounds.');
-    $this->assertSame($t->check('Yellow'), 'Unknown enum variant Yellow.');
+    $this->assertStringStartsWith('Value was expected to be an integer from 0 to 2 inclusively', $t->check(12));
+    $this->assertStringStartsWith('Value was expected to be one of available strings (Red, Green, Blue)', $t->check('Yellow'));
     $this->assertEmpty($t->check('Blue'));
 
     $t = new TypeSignature([':Just' => 'int', ':Nothing' => null]);
-    $this->assertSame($t->check(['Just', 1, 2]), 'Type variant should be an array [string, *] or [int, *].');
-    $this->assertSame($t->check(['Foo', 1]), 'Unknown type constructor Foo.');
-    $this->assertSame($t->check(['Nothing', 1]), 'Constructor Nothing does not accept value.');
+    $this->assertStringStartsWith('Value was expected to be a regular array with type [string, *] or [int, *]', $t->check(['Just', 1, 2]));
+    $this->assertStringStartsWith('Value[0] was expected to be one of available strings (Just, Nothing)', $t->check(['Foo', 1]));
+    $this->assertStringStartsWith('Value[1] was expected to be exactly null', $t->check(['Nothing', 1]));
     $this->assertEmpty($t->check(['Just', 10]));
     $this->assertEmpty($t->check(['Nothing', null]));
   }
